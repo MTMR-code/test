@@ -101,19 +101,24 @@ def main():
 
     # インデックス（四半期）を整形
     df.reset_index(inplace=True)
-    df['四半期'] = df['四半期'].str.replace('/', ' ').str.strip()
+    
+    # 四半期列を文字列に変換
+    df['四半期'] = df['四半期'].astype(str).str.strip()
 
     # 年を補足するロジックを追加
     current_year = None
     for i, row in df.iterrows():
-        # "2024/1-3月期" のような形式から年を抽出
-        match = re.search(r'(\d{4})年', str(row['四半期']))
+        # "YYYY/ 1- 3." のような形式から年を抽出
+        match = re.search(r'(\d{4})/', row['四半期'])
         if match:
             current_year = match.group(1)
+            # 年を含む場合はそのまま使用
+            df.loc[i, '四半期'] = row['四半期'].replace('/', '年').replace('.', '月期').strip()
         
-        # "4-6月期" のような形式に年を補足
-        if current_year and not re.search(r'年', str(row['四半期'])):
-            df.loc[i, '四半期'] = f"{current_year}年{row['四半期']}"
+        # " 4- 6." のような形式に年を補足
+        elif current_year:
+            quarter_text = row['四半期'].replace('.', '月期').strip()
+            df.loc[i, '四半期'] = f"{current_year}年{quarter_text}"
 
     # グラフ表示用のデータフレームを準備
     plot_df = df.set_index('四半期')
