@@ -102,24 +102,28 @@ def main():
     # インデックス（四半期）を整形
     df.reset_index(inplace=True)
     
-    # 四半期列を文字列に変換
-    df['四半期'] = df['四半期'].astype(str).str.strip()
+    # 四半期列を文字列に変換し、整形
+    df['四半期'] = df['四半期'].astype(str).str.strip().str.replace('.', '')
 
     # 年を補足するロジックを修正
     current_year = None
+    new_quarter_list = []
+
     for i, row in df.iterrows():
-        # "YYYY/1-3."のような形式から年を抽出
-        match = re.search(r'(\d{4})/(\d{1,2}-\d{1,2})', row['四半期'])
+        quarter_str = row['四半期']
+        match = re.search(r'(\d{4})/(.*)', quarter_str)
+        
         if match:
             current_year = match.group(1)
-            quarter_text = match.group(2)
-            df.loc[i, '四半期'] = f"{current_year}年{quarter_text}月期"
-        
-        # "4-6."のような形式に年を補足
+            quarter_text = match.group(2).strip()
+            new_quarter_list.append(f"{current_year}年{quarter_text}月期")
         elif current_year:
-            quarter_text = re.search(r'(\d{1,2}-\d{1,2})', row['四半期'])
-            if quarter_text:
-                df.loc[i, '四半期'] = f"{current_year}年{quarter_text.group(1)}月期"
+            quarter_text = quarter_str.strip()
+            new_quarter_list.append(f"{current_year}年{quarter_text}月期")
+        else:
+            new_quarter_list.append(quarter_str)
+            
+    df['四半期'] = new_quarter_list
             
     # グラフ表示用のデータフレームを準備
     plot_df = df.set_index('四半期')
