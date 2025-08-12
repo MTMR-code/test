@@ -62,8 +62,11 @@ def main():
         chart_df = plot_df[[selected_column]].reset_index()
         
         # 前年比の計算
+        # yyyymm_intを整数型で作成
         chart_df['yyyymm_int'] = chart_df['年月'].str[:4].astype(int) * 100 + chart_df['年月'].str[5:7].astype(int)
-        chart_df['yyyymm_prev'] = (chart_df['yyyymm_int'] - 100).astype(str).str.zfill(6)
+        
+        # ★修正箇所★ yyyymm_prevを整数型で作成
+        chart_df['yyyymm_prev'] = chart_df['yyyymm_int'] - 100
         
         # 前年同月のデータを結合
         chart_df = pd.merge(chart_df, chart_df[['yyyymm_int', selected_column]], 
