@@ -3,7 +3,6 @@ import pandas as pd
 import io
 import requests
 import altair as alt
-import re
 from datetime import datetime
 
 # ヘッダー処理関数
@@ -26,7 +25,7 @@ def process_gdp_header(csv_data, skiprows, nrows):
 def get_gdp_data():
     """内閣府からGDPの実額と前期比のCSVデータを取得し、整形する関数"""
     url_gaku = "https://www.esri.cao.go.jp/jp/sna/data/data_list/sokuhou/files/2025/qe251_2/tables/gaku-jk2512.csv"
-    url_ritu = "https://www.esri.cao.jp/jp/sna/data/data_list/sokuhou/files/2025/qe251_2/tables/ritu-jk2512.csv"
+    url_ritu = "https://www.esri.cao.go.jp/jp/sna/data/data_list/sokuhou/files/2025/qe251_2/tables/ritu-jk2512.csv"
 
     gaku_df = pd.DataFrame()
     ritu_df = pd.DataFrame()
