@@ -15,16 +15,19 @@ def get_gdp_data():
         response.raise_for_status()  # HTTPエラーがあれば例外を発生させる
         csv_data = io.BytesIO(response.content)
 
-        # ファイルを読み込む
-        # 8行目からヘッダーが始まることを考慮して、skiprowsとheaderを調整
-        df = pd.read_csv(csv_data, encoding='shift_jis', header=8, index_col=0)
+        # ヘッダーを複数行読み込むため、最初の読み込みでヘッダーを指定しない
+        df = pd.read_csv(csv_data, encoding='shift_jis', header=None, skiprows=6)
 
-        # 不要な行・列を削除
-        df = df.dropna(how='all')
-        df = df.dropna(axis=1, how='all')
+        # 8行目（インデックス7）の値を新しい列名として設定
+        df.columns = df.iloc[1]
+        df = df[2:] # 不要なヘッダー行を削除
 
         # 最初の列をインデックスとして設定し、名前を'四半期'に変更
+        df = df.set_index(df.columns[0])
         df.index.name = '四半期'
+
+        # 不要な列を削除 (データがすべて欠損値の列)
+        df = df.dropna(axis=1, how='all')
 
         # 数値データに変換できない値をNaNに変換し、数値型に変換
         df = df.apply(pd.to_numeric, errors='coerce')
@@ -55,7 +58,6 @@ def main():
     plot_df = df.set_index('四半期')
 
     # カテゴリの選択
-    # 修正箇所: フィルタリングせずにすべての列を表示
     columns_to_plot = plot_df.columns.tolist()
     selected_column = st.selectbox("カテゴリを選択してください", columns_to_plot)
 
