@@ -7,8 +7,8 @@ st.title("日本の消費者物価指数（CPI）表示アプリ")
 # 説明
 st.write("このアプリは、e-Stat（政府統計ポータル）から取得した最新のCPIデータを表示します。")
 
-# CPIデータのCSVファイルURL（2020年基準の例）
-csv_url = "https://www.e-stat.go.jp/stat-search/file-download?statInfId=000032231210&fileKind=1"
+# 正しいCSVファイルURL（2025年6月時点）
+csv_url = "https://www.e-stat.go.jp/stat-search/file-download?statInfId=000032103842&fileKind=1"
 
 # データの読み込み
 try:
