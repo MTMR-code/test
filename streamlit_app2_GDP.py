@@ -65,6 +65,12 @@ def main():
     st.title("GDP（国内総生産）グラフ表示アプリ")
     
     gaku_df, ritu_df = get_gdp_data()
+    
+    if st.checkbox("Show raw dataframes for debugging"):
+        st.subheader("Gaku DataFrame (実額)")
+        st.dataframe(gaku_df)
+        st.subheader("Ritu DataFrame (前期比)")
+        st.dataframe(ritu_df)
 
     if gaku_df.empty or ritu_df.empty:
         st.warning("データを取得できませんでした。URLを確認してください。")
