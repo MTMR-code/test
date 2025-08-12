@@ -40,7 +40,11 @@ def get_gdp_data():
         gaku_df = gaku_df.set_index(gaku_df.columns[0])
         gaku_df.index.name = '四半期'
         gaku_df = gaku_df.dropna(axis=1, how='all')
+        
+        # 数値変換前のデータクリーニング
+        gaku_df = gaku_df.replace({'***': pd.NA, '---': pd.NA})
         gaku_df = gaku_df.apply(pd.to_numeric, errors='coerce')
+
 
         # 前期比データの取得と整形
         response_ritu = requests.get(url_ritu)
@@ -52,7 +56,11 @@ def get_gdp_data():
         ritu_df = ritu_df.set_index(ritu_df.columns[0])
         ritu_df.index.name = '四半期'
         ritu_df = ritu_df.dropna(axis=1, how='all')
+        
+        # 数値変換前のデータクリーニング
+        ritu_df = ritu_df.replace({'***': pd.NA, '---': pd.NA})
         ritu_df = ritu_df.apply(pd.to_numeric, errors='coerce')
+
 
         return gaku_df, ritu_df
 
@@ -123,7 +131,4 @@ def main():
             st.altair_chart(line_chart, use_container_width=True)
 
     else:
-        st.info("グラフを表示するにはカテゴリを選択してください。")
-
-if __name__ == "__main__":
-    main()
+        st.info("グラフを表示
