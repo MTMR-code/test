@@ -40,6 +40,9 @@ def get_gdp_data():
         gaku_df = gaku_df.set_index(gaku_df.columns[0])
         gaku_df.index.name = '四半期'
         gaku_df = gaku_df.dropna(axis=1, how='all')
+        
+        # 数値変換前にカンマを削除
+        gaku_df = gaku_df.replace({',': ''}, regex=True)
         gaku_df = gaku_df.apply(pd.to_numeric, errors='coerce')
 
         # 前期比データの取得と整形
@@ -52,6 +55,9 @@ def get_gdp_data():
         ritu_df = ritu_df.set_index(ritu_df.columns[0])
         ritu_df.index.name = '四半期'
         ritu_df = ritu_df.dropna(axis=1, how='all')
+        
+        # 数値変換前にカンマを削除
+        ritu_df = ritu_df.replace({',': ''}, regex=True)
         ritu_df = ritu_df.apply(pd.to_numeric, errors='coerce')
 
         return gaku_df, ritu_df
