@@ -58,10 +58,15 @@ def main():
         # グラフ描画のためのDataFrameを準備
         chart_df = plot_df[[selected_column]].reset_index()
         
+        # ★★★ 修正箇所1: 数値型への強制変換 ★★★
+        # `errors='coerce'`で数値に変換できない値をNaNにする
+        chart_df[selected_column] = pd.to_numeric(chart_df[selected_column], errors='coerce')
+        
         # Altairでグラフを描画
         chart = alt.Chart(chart_df).mark_line(point=True).encode(
             x=alt.X('年月', axis=alt.Axis(title='年月')),
-            y=alt.Y(selected_column, axis=alt.Axis(title='指数', type='quantitative')),
+            # ★★★ 修正箇所2: typeの指定を削除 ★★★
+            y=alt.Y(selected_column, axis=alt.Axis(title='指数')),
             tooltip=['年月', alt.Tooltip(selected_column, title=selected_column)]
         ).interactive()
         
