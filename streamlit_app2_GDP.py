@@ -111,18 +111,21 @@ def main():
     for i, row in df.iterrows():
         quarter_str = str(row['四半期']).strip().replace('.', '')
         
-        # 年を含むパターン (例: '2024/1-3')
-        match = re.search(r'(\d{4})/(\d{1,2})', quarter_str)
-        if match:
-            current_year = int(match.group(1))
-            month = int(match.group(2))
+        # '2024/1-3'のような形式から年と月を抽出
+        match_with_year = re.search(r'(\d{4})/(\d{1,2})', quarter_str)
+        # '4-6'のような形式から月を抽出
+        match_without_year = re.search(r'(\d{1,2})', quarter_str)
+        
+        if match_with_year:
+            current_year = int(match_with_year.group(1))
+            month = int(match_with_year.group(2))
             df.loc[i, 'date'] = datetime(current_year, month, 1)
-        # 年を含まないパターン (例: '4-6')
-        elif current_year:
-            match = re.search(r'(\d{1,2})', quarter_str)
-            if match:
-                month = int(match.group(1))
-                df.loc[i, 'date'] = datetime(current_year, month, 1)
+        elif current_year and match_without_year:
+            month = int(match_without_year.group(1))
+            df.loc[i, 'date'] = datetime(current_year, month, 1)
+        else:
+            # どちらのパターンにも一致しない場合は元の文字列を保持
+            df.loc[i, 'date'] = None
 
     # グラフ表示用のデータフレームを準備
     plot_df = df.set_index('date')
