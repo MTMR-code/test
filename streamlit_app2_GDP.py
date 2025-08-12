@@ -4,71 +4,92 @@ import io
 import requests
 import altair as alt
 
+# ヘッダー処理関数
+def process_gdp_header(csv_data, skiprows, nrows):
+    """
+    CSVデータのヘッダーを読み込み、列名を生成する関数
+    """
+    header_df = pd.read_csv(io.BytesIO(csv_data), encoding='shift_jis', header=None, skiprows=skiprows, nrows=nrows, dtype=str)
+    new_columns = []
+    for col in header_df.columns:
+        first_non_na = header_df[col].dropna()
+        if not first_non_na.empty:
+            new_columns.append(first_non_na.iloc[0].strip())
+        else:
+            new_columns.append(f'Unnamed_Col_{col}')
+    return new_columns
+
 # データの取得とキャッシュ
 @st.cache_data
 def get_gdp_data():
-    """内閣府からGDPのCSVデータを取得し、整形する関数"""
-    url = "https://www.esri.cao.go.jp/jp/sna/data/data_list/sokuhou/files/2025/qe251_2/tables/gaku-jk2512.csv"
+    """内閣府からGDPの実額と前期比のCSVデータを取得し、整形する関数"""
+    url_gaku = "https://www.esri.cao.go.jp/jp/sna/data/data_list/sokuhou/files/2025/qe251_2/tables/gaku-jk2512.csv"
+    url_ritu = "https://www.esri.cao.go.jp/jp/sna/data/data_list/sokuhou/files/2025/qe251_2/tables/ritu-jk2512.csv"
+
+    gaku_df = pd.DataFrame()
+    ritu_df = pd.DataFrame()
 
     try:
-        response = requests.get(url)
-        response.raise_for_status()  # HTTPエラーがあれば例外を発生させる
-        csv_data = io.BytesIO(response.content)
+        # 実額データの取得と整形
+        response_gaku = requests.get(url_gaku)
+        response_gaku.raise_for_status()
+        csv_data_gaku = response_gaku.content
+        new_columns_gaku = process_gdp_header(csv_data_gaku, skiprows=2, nrows=4)
+        gaku_df = pd.read_csv(io.BytesIO(csv_data_gaku), encoding='shift_jis', header=None, skiprows=8)
+        gaku_df.columns = new_columns_gaku
+        gaku_df = gaku_df.set_index(gaku_df.columns[0])
+        gaku_df.index.name = '四半期'
+        gaku_df = gaku_df.dropna(axis=1, how='all')
+        gaku_df = gaku_df.apply(pd.to_numeric, errors='coerce')
 
-        # ヘッダーとして使用する行を文字列として読み込む（3行目から6行目）
-        header_df = pd.read_csv(csv_data, encoding='shift_jis', header=None, skiprows=2, nrows=4, dtype=str)
+        # 前期比データの取得と整形
+        response_ritu = requests.get(url_ritu)
+        response_ritu.raise_for_status()
+        csv_data_ritu = response_ritu.content
+        new_columns_ritu = process_gdp_header(csv_data_ritu, skiprows=2, nrows=4)
+        ritu_df = pd.read_csv(io.BytesIO(csv_data_ritu), encoding='shift_jis', header=None, skiprows=8)
+        ritu_df.columns = new_columns_ritu
+        ritu_df = ritu_df.set_index(ritu_df.columns[0])
+        ritu_df.index.name = '四半期'
+        ritu_df = ritu_df.dropna(axis=1, how='all')
+        ritu_df = ritu_df.apply(pd.to_numeric, errors='coerce')
 
-        # 各列で空白ではない最初のセルを新しい列名として抽出
-        new_columns = []
-        for col in header_df.columns:
-            # 欠損値を除去
-            first_non_na = header_df[col].dropna()
-            # 結果が空でないか確認
-            if not first_non_na.empty:
-                new_columns.append(first_non_na.iloc[0].strip())
-            else:
-                # 空の列の場合は、適切な名前を割り当てる
-                new_columns.append(f'Unnamed_Col_{col}')
-
-        # 実際のデータを再度読み込む
-        csv_data = io.BytesIO(response.content)
-        df = pd.read_csv(csv_data, encoding='shift_jis', header=None, skiprows=8)
-
-        # 新しい列名を設定
-        df.columns = new_columns
-
-        # 最初の列をインデックスとして設定し、名前を'四半期'に変更
-        df = df.set_index(df.columns[0])
-        df.index.name = '四半期'
-
-        # 不要な列を削除 (データがすべて欠損値の列)
-        df = df.dropna(axis=1, how='all')
-
-        # 数値データに変換
-        df = df.apply(pd.to_numeric, errors='coerce')
-        
-        return df
+        return gaku_df, ritu_df
 
     except requests.exceptions.RequestException as e:
         st.error(f"データの取得中にエラーが発生しました: {e}")
-        return pd.DataFrame()
+        return pd.DataFrame(), pd.DataFrame()
 
 # アプリのメイン処理
 def main():
     st.title("GDP（国内総生産）グラフ表示アプリ")
-    st.markdown("内閣府のGDP統計データ（速報値）を基に、主要項目の推移を可視化します。")
-    st.markdown("※本データは実質季節調整系列（前期比）です。")
+    
+    gaku_df, ritu_df = get_gdp_data()
 
-    df = get_gdp_data()
-
-    if df.empty:
+    if gaku_df.empty or ritu_df.empty:
         st.warning("データを取得できませんでした。URLを確認してください。")
         return
+
+    # 表示方法の選択
+    view_type = st.radio(
+        "表示方法を選択してください",
+        ("実額", "前期比")
+    )
+    
+    # 選択された表示方法に応じてデータフレームを切り替え
+    if view_type == "実額":
+        df = gaku_df.copy()
+        y_axis_title = '実額 (10億円)'
+        title_suffix = 'の実額推移'
+    else: # 前期比
+        df = ritu_df.copy()
+        y_axis_title = '前期比 (%)'
+        title_suffix = 'の前期比推移'
 
     # インデックス（四半期）を整形
     df.reset_index(inplace=True)
     df['四半期'] = df['四半期'].str.replace('/', ' ').str.strip()
-
+    
     # グラフ表示用のデータフレームを準備
     plot_df = df.set_index('四半期')
 
@@ -78,27 +99,28 @@ def main():
 
     if selected_column:
         st.subheader(f"GDPの推移: {selected_column}")
-        st.markdown("※グラフは前期比（%）で表示されます。")
-
+        
         # グラフ描画のためのDataFrameを準備
         chart_df = plot_df[[selected_column]].reset_index()
 
         # Altairで折れ線グラフを作成
         line_chart = alt.Chart(chart_df).mark_line(point=True).encode(
             x=alt.X('四半期', axis=alt.Axis(title='四半期', labelAngle=-45)),
-            y=alt.Y(selected_column, axis=alt.Axis(title='前期比 (%)', titleColor='blue')),
+            y=alt.Y(selected_column, axis=alt.Axis(title=y_axis_title, titleColor='blue')),
             tooltip=[
                 alt.Tooltip('四半期', title='四半期'),
-                alt.Tooltip(selected_column, title='前期比 (%)', format='.2f')
+                alt.Tooltip(selected_column, title=y_axis_title, format='.2f')
             ]
         ).properties(
-            title=f"GDP（{selected_column}）の前期比推移"
+            title=f"GDP（{selected_column}）{title_suffix}"
         )
         
-        # ゼロラインを追加
-        zero_line = alt.Chart(pd.DataFrame({'y': [0]})).mark_rule(color='red', strokeDash=[5, 5]).encode(y='y')
-
-        st.altair_chart(line_chart + zero_line, use_container_width=True)
+        # 前期比の場合のみゼロラインを追加
+        if view_type == "前期比":
+            zero_line = alt.Chart(pd.DataFrame({'y': [0]})).mark_rule(color='red', strokeDash=[5, 5]).encode(y='y')
+            st.altair_chart(line_chart + zero_line, use_container_width=True)
+        else:
+            st.altair_chart(line_chart, use_container_width=True)
 
     else:
         st.info("グラフを表示するにはカテゴリを選択してください。")
