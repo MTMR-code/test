@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import io
 import requests
-import plotly.express as px
+import plotly.graph_objects as go
 
 # データの取得とキャッシュ
 @st.cache_data
@@ -58,21 +58,22 @@ def main():
     if selected_column:
         st.subheader(f"CPIの推移: {selected_column}")
         
-        # グラフの描画 (Plotly Expressを使用)
-        fig = px.line(
-            plot_df,
+        # グラフの描画 (plotly.graph_objectsを使用)
+        fig = go.Figure()
+        
+        fig.add_trace(go.Scatter(
             x=plot_df.index,
-            y=selected_column,
-            title=f"CPI（{selected_column}）の推移",
-            labels={'x': '年月', 'y': '指数'},
-        )
+            y=plot_df[selected_column],
+            mode='lines+markers',
+            name=selected_column
+        ))
         
         # グラフのレイアウトを調整
         fig.update_layout(
+            title=f"CPI（{selected_column}）の推移",
             xaxis_title="年月",
             yaxis_title="指数",
             hovermode="x unified",
-            xaxis={'tickmode': 'linear', 'dtick': 6}, # 6ヶ月ごとにラベルを表示
         )
         
         st.plotly_chart(fig, use_container_width=True)
