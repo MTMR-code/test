@@ -97,4 +97,15 @@ def main():
             line_chart.encode(tooltip=tooltip), 
             bar_chart.encode(tooltip=tooltip)
         ).resolve_scale(
-            y='independent'  #
+            y='independent'  # 独立したY軸を右側に表示
+        ).properties(
+            title=f"CPI（{selected_column}）の推移と前年比"
+        )
+        
+        st.altair_chart(combined_chart, use_container_width=True)
+        
+    else:
+        st.info("グラフを表示するにはカテゴリを選択してください。")
+
+if __name__ == "__main__":
+    main()
