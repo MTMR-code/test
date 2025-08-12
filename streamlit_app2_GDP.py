@@ -3,6 +3,7 @@ import pandas as pd
 import io
 import requests
 import altair as alt
+import re
 
 # ヘッダー処理関数
 def process_gdp_header(csv_data, skiprows, nrows):
@@ -101,7 +102,19 @@ def main():
     # インデックス（四半期）を整形
     df.reset_index(inplace=True)
     df['四半期'] = df['四半期'].str.replace('/', ' ').str.strip()
-    
+
+    # 年を補足するロジックを追加
+    current_year = None
+    for i, row in df.iterrows():
+        # "2024/1-3月期" のような形式から年を抽出
+        match = re.search(r'(\d{4})年', str(row['四半期']))
+        if match:
+            current_year = match.group(1)
+        
+        # "4-6月期" のような形式に年を補足
+        if current_year and not re.search(r'年', str(row['四半期'])):
+            df.loc[i, '四半期'] = f"{current_year}年{row['四半期']}"
+
     # グラフ表示用のデータフレームを準備
     plot_df = df.set_index('四半期')
 
