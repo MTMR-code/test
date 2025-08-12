@@ -9,30 +9,32 @@ csv_url = "https://www.e-stat.go.jp/stat-search/file-download?statInfId=00003210
 
 # データの読み込み
 try:
-    df = pd.read_csv(csv_url, encoding="shift_jis")
-
-    # 先頭表示
-    st.subheader("取得したデータの先頭5行")
-    st.dataframe(df.head())
+    df = pd.read_csv(csv_url, encoding="shift_jis", skiprows=6)
 
     # 列名表示
     st.subheader("列名一覧")
     st.write(df.columns.tolist())
 
-    # 日付列とCPI列の指定
-    date_column = df.columns[0]  # 例: "類・品目"
-    value_column = "総合"
+    # 転置して年月をインデックスに
+    if df.columns[0] == "類・品目":
+        df_transposed = df.set_index("類・品目").T
+        df_transposed.index.name = "年月"
+        df_transposed.reset_index(inplace=True)
 
-    if date_column in df.columns and value_column in df.columns:
-        df_plot = df[[date_column, value_column]].dropna()
-        df_plot[date_column] = pd.to_datetime(df_plot[date_column], format="%Y年%m月", errors="coerce")
-        df_plot = df_plot.dropna()
-        df_plot = df_plot.set_index(date_column)
+        # 年月を datetime に変換
+        df_transposed["年月"] = pd.to_datetime(df_transposed["年月"], format="%Y年%m月", errors="coerce")
+        df_transposed = df_transposed.dropna(subset=["年月"])
+
+        # 総合列を数値に変換
+        df_transposed["総合"] = pd.to_numeric(df_transposed["総合"], errors="coerce")
+        df_transposed = df_transposed.dropna(subset=["総合"])
+
+        df_transposed = df_transposed.set_index("年月")
 
         # グラフ表示
         st.subheader("CPI（総合）の推移")
-        st.line_chart(df_plot)
+        st.line_chart(df_transposed["総合"])
     else:
-        st.error(f"列 '{date_column}' または '{value_column}' が見つかりませんでした。")
+        st.error("最初の列が '類・品目' ではありません。CSV構造が変更された可能性があります。")
 except Exception as e:
     st.error(f"データの取得または解析中にエラーが発生しました: {e}")
