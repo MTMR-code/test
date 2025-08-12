@@ -26,7 +26,7 @@ def process_gdp_header(csv_data, skiprows, nrows):
 def get_gdp_data():
     """内閣府からGDPの実額と前期比のCSVデータを取得し、整形する関数"""
     url_gaku = "https://www.esri.cao.go.jp/jp/sna/data/data_list/sokuhou/files/2025/qe251_2/tables/gaku-jk2512.csv"
-    url_ritu = "https://www.esri.cao.go.jp/jp/sna/data/data_list/sokuhou/files/2025/qe251_2/tables/ritu-jk2512.csv"
+    url_ritu = "https://www.esri.cao.jp/jp/sna/data/data_list/sokuhou/files/2025/qe251_2/tables/ritu-jk2512.csv"
 
     gaku_df = pd.DataFrame()
     ritu_df = pd.DataFrame()
@@ -103,51 +103,38 @@ def main():
     # インデックス（四半期）を整形
     df.reset_index(inplace=True)
     
-    # datetime型に変換するための新しい列を作成
-    df['date'] = pd.NaT
-    current_year = None
+    # 行番号を基準に年と四半期を生成するロジック
+    start_year = 1994
+    start_month = 1
     
-    # 四半期文字列から年と月を抽出してdate列を生成
-    for i, row in df.iterrows():
-        quarter_str = str(row['四半期']).strip().replace('.', '')
+    def generate_quarter_label(index):
+        # 1行目はインデックス0のため、7行目に対応させるために +7
+        total_quarters = 7 + index
+        year = start_year + total_quarters // 4
+        quarter_num = total_quarters % 4
         
-        # 先頭4桁が数字のパターンをチェック
-        if re.match(r'^\d{4}', quarter_str):
-            current_year = int(quarter_str[:4])
+        if quarter_num == 0:
+            month = 1
+            quarter_str = "1-3"
+        elif quarter_num == 1:
+            month = 4
+            quarter_str = "4-6"
+        elif quarter_num == 2:
+            month = 7
+            quarter_str = "7-9"
+        else:
+            month = 10
+            quarter_str = "10-12"
             
-            if '1-3' in quarter_str:
-                month = 1
-            elif '4-6' in quarter_str:
-                month = 4
-            elif '7-9' in quarter_str:
-                month = 7
-            elif '10-12' in quarter_str:
-                month = 10
-            else:
-                # 該当なし
-                continue
-        # 先頭4桁が数字以外で年がないパターンをチェック
-        elif current_year:
-            if '4-6' in quarter_str:
-                month = 4
-            elif '7-9' in quarter_str:
-                month = 7
-            elif '10-12' in quarter_str:
-                month = 10
-            elif '1-3' in quarter_str:
-                # 次の年になるため、current_yearをインクリメント
-                current_year += 1
-                month = 1
-            else:
-                continue
+        return f"{year}年{quarter_str}月期", datetime(year, month, 1)
 
-        df.loc[i, 'date'] = datetime(current_year, month, 1)
-
+    df['四半期'], df['date'] = zip(*[generate_quarter_label(i) for i in df.index])
+            
     # グラフ表示用のデータフレームを準備
     plot_df = df.set_index('date')
 
     # カテゴリの選択
-    columns_to_plot = plot_df.columns.tolist()
+    columns_to_plot = [col for col in plot_df.columns if col != '四半期']
     selected_column = st.selectbox("カテゴリを選択してください", columns_to_plot)
 
     if selected_column:
