@@ -55,7 +55,8 @@ def main():
     plot_df = df.set_index('四半期')
 
     # カテゴリの選択
-    columns_to_plot = [col for col in plot_df.columns if '（支出側）' in col or '民間' in col or '公的' in col or '国内総生産' in col]
+    # 修正箇所: フィルタリングせずにすべての列を表示
+    columns_to_plot = plot_df.columns.tolist()
     selected_column = st.selectbox("カテゴリを選択してください", columns_to_plot)
 
     if selected_column:
