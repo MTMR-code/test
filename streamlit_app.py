@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 
 # タイトル
 st.title("日本の消費者物価指数（CPI）表示アプリ")
@@ -20,20 +19,15 @@ try:
         df_filtered = df[["年月", "全国"]].dropna()
         df_filtered["年月"] = pd.to_datetime(df_filtered["年月"], format="%Y年%m月", errors="coerce")
         df_filtered = df_filtered.dropna()
+        df_filtered = df_filtered.set_index("年月")
 
         # 表の表示
         st.subheader("CPIデータ（全国）")
         st.dataframe(df_filtered)
 
-        # グラフの表示
+        # グラフの表示（Streamlit標準）
         st.subheader("CPI推移グラフ")
-        fig, ax = plt.subplots()
-        ax.plot(df_filtered["年月"], df_filtered["全国"], marker="o")
-        ax.set_xlabel("年月")
-        ax.set_ylabel("CPI（全国）")
-        ax.set_title("全国CPIの推移")
-        ax.grid(True)
-        st.pyplot(fig)
+        st.line_chart(df_filtered)
     else:
         st.error("CSVファイルに '年月' または '全国' 列が見つかりませんでした。")
 except Exception as e:
