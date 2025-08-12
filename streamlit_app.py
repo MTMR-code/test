@@ -9,28 +9,22 @@ import altair as alt
 def get_cpi_data():
     """e-StatからCPIのCSVデータを取得し、整形する関数"""
     url = "https://www.e-stat.go.jp/stat-search/file-download?statInfId=000032103842&fileKind=1"
-    
+
     try:
         response = requests.get(url)
-        response.raise_for_status()
+        response.raise_for_status()  # HTTPエラーがあれば例外を発生させる
         csv_data = io.BytesIO(response.content)
         
-        # データを読み込み、不要な行をスキップ
-        df = pd.read_csv(csv_data, encoding='shift_jis', skiprows=5, header=0)
+        # skiprows=6で正しいヘッダー行を読み込む
+        df = pd.read_csv(csv_data, encoding='shift_jis', skiprows=6)
         
-        # 最初の行（新しいヘッダー）を適切に設定
-        df.columns = df.iloc[0]
-        df = df.drop(0).reset_index(drop=True)
-        
-        # 列名のない最初の列（yyyymm）に'yyyymm'という名前を付ける
+        # 最初の列名が自動で設定されないため、手動で変更
         df.rename(columns={df.columns[0]: 'yyyymm'}, inplace=True)
+
+        # yyyymm以外の列を数値型に変換
+        numeric_cols = [col for col in df.columns if col != 'yyyymm']
+        df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors='coerce')
         
-        # すべてのデータ列を数値型に変換
-        # errors='coerce'で変換できない値をNaN（欠損値）にする
-        for col in df.columns:
-            if col != 'yyyymm':
-                df[col] = pd.to_numeric(df[col], errors='coerce')
-                
         return df
 
     except requests.exceptions.RequestException as e:
@@ -46,12 +40,6 @@ def main():
     if df.empty:
         st.warning("データを取得できませんでした。")
         return
-        
-    # デバッグ用に出力
-    st.subheader("デバッグ情報")
-    st.write("データフレームのプレビュー:")
-    st.dataframe(df.head())
-    st.write("列名:", df.columns.tolist())
 
     # 日付列の整形
     df['年月'] = df['yyyymm'].astype(str).str.slice(0, 6)
@@ -63,9 +51,6 @@ def main():
     # カテゴリの選択
     columns_to_plot = [col for col in plot_df.columns if col not in ['yyyymm']]
     selected_column = st.selectbox("カテゴリを選択してください", columns_to_plot)
-    
-    # デバッグ用に出力
-    st.write(f"選択されたカテゴリ: {selected_column}")
 
     if selected_column:
         st.subheader(f"CPIの推移: {selected_column}")
