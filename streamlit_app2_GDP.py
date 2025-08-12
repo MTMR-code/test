@@ -109,17 +109,18 @@ def main():
     current_year = None
     for i, row in df.iterrows():
         # "YYYY/1-3."のような形式から年を抽出
-        match = re.search(r'(\d{4})/', row['四半期'])
+        match = re.search(r'(\d{4})/(\d{1,2}-\d{1,2})', row['四半期'])
         if match:
             current_year = match.group(1)
-            # 年を含む場合はそのまま使用し、形式を調整
-            df.loc[i, '四半期'] = row['四半期'].replace('.', '').replace('/', '年').strip()
+            quarter_text = match.group(2)
+            df.loc[i, '四半期'] = f"{current_year}年{quarter_text}月期"
         
         # "4-6."のような形式に年を補足
         elif current_year:
-            quarter_text = row['四半期'].replace('.', '').strip()
-            df.loc[i, '四半期'] = f"{current_year}年{quarter_text}"
-
+            quarter_text = re.search(r'(\d{1,2}-\d{1,2})', row['四半期'])
+            if quarter_text:
+                df.loc[i, '四半期'] = f"{current_year}年{quarter_text.group(1)}月期"
+            
     # グラフ表示用のデータフレームを準備
     plot_df = df.set_index('四半期')
 
