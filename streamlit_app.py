@@ -8,7 +8,7 @@ import altair as alt
 @st.cache_data
 def get_cpi_data():
     """e-StatからCPIのCSVデータを取得し、整形する関数"""
-    url = "https://www.e-stat.go.jp/stat-search/file-download?statInfId=000032103842&fileKind=1"
+    url = "https://www.e-stat.go.jp/stat-search/file-download?statInfId=000032103844&fileKind=1"
 
     try:
         response = requests.get(url)
