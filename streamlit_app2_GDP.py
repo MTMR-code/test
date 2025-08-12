@@ -69,7 +69,7 @@ def get_gdp_data():
 
 # アプリのメイン処理
 def main():
-    st.title("GDP（国内総生産）グラフ表示アプリ")
+    st.title("GDP（国内総生産）グラフ表示アプリ（2015年基準　実質季節調整済）")
     
     gaku_df, ritu_df = get_gdp_data()
     
