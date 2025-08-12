@@ -21,9 +21,14 @@ def get_gdp_data():
         # 各列で空白ではない最初のセルを新しい列名として抽出
         new_columns = []
         for col in header_df.columns:
-            # 欠損値を除いた最初の値を新しい列名とする
-            first_non_na_value = header_df[col].dropna().iloc[0]
-            new_columns.append(first_non_na_value.strip())
+            # 欠損値を除去
+            first_non_na = header_df[col].dropna()
+            # 結果が空でないか確認
+            if not first_non_na.empty:
+                new_columns.append(first_non_na.iloc[0].strip())
+            else:
+                # 空の列の場合は、適切な名前を割り当てる
+                new_columns.append(f'Unnamed_Col_{col}')
 
         # 実際のデータを再度読み込む
         csv_data = io.BytesIO(response.content)
