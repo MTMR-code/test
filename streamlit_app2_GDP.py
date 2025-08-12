@@ -4,6 +4,7 @@ import io
 import requests
 import altair as alt
 import re
+from datetime import datetime
 
 # ヘッダー処理関数
 def process_gdp_header(csv_data, skiprows, nrows):
@@ -102,31 +103,29 @@ def main():
     # インデックス（四半期）を整形
     df.reset_index(inplace=True)
     
-    # 四半期列を文字列に変換し、整形
-    df['四半期'] = df['四半期'].astype(str).str.strip().str.replace('.', '')
-
-    # 年を補足するロジックを修正
+    # datetime型に変換するための新しい列を作成
+    df['date'] = pd.NaT
     current_year = None
-    new_quarter_list = []
-
+    
+    # 四半期文字列から年と月を抽出してdate列を生成
     for i, row in df.iterrows():
-        quarter_str = row['四半期']
-        match = re.search(r'(\d{4})/(.*)', quarter_str)
+        quarter_str = str(row['四半期']).strip().replace('.', '')
         
+        # 年を含むパターン (例: '2024/1-3')
+        match = re.search(r'(\d{4})/(\d{1,2})', quarter_str)
         if match:
-            current_year = match.group(1)
-            quarter_text = match.group(2).strip()
-            new_quarter_list.append(f"{current_year}年{quarter_text}月期")
+            current_year = int(match.group(1))
+            month = int(match.group(2))
+            df.loc[i, 'date'] = datetime(current_year, month, 1)
+        # 年を含まないパターン (例: '4-6')
         elif current_year:
-            quarter_text = quarter_str.strip()
-            new_quarter_list.append(f"{current_year}年{quarter_text}月期")
-        else:
-            new_quarter_list.append(quarter_str)
-            
-    df['四半期'] = new_quarter_list
-            
+            match = re.search(r'(\d{1,2})', quarter_str)
+            if match:
+                month = int(match.group(1))
+                df.loc[i, 'date'] = datetime(current_year, month, 1)
+
     # グラフ表示用のデータフレームを準備
-    plot_df = df.set_index('四半期')
+    plot_df = df.set_index('date')
 
     # カテゴリの選択
     columns_to_plot = plot_df.columns.tolist()
@@ -140,25 +139,14 @@ def main():
 
         # Altairで折れ線グラフを作成
         line_chart = alt.Chart(chart_df).mark_line(point=True).encode(
-            x=alt.X('四半期', axis=alt.Axis(title='四半期', labelAngle=-45)),
+            x=alt.X('date', axis=alt.Axis(title='四半期', format='%Y年%m月')),
             y=alt.Y(selected_column, axis=alt.Axis(title=y_axis_title, titleColor='blue')),
             tooltip=[
-                alt.Tooltip('四半期', title='四半期'),
+                alt.Tooltip('date', title='四半期', format='%Y年%m月'),
                 alt.Tooltip(selected_column, title=y_axis_title, format='.2f')
             ]
         ).properties(
             title=f"GDP（{selected_column}）{title_suffix}"
         )
         
-        # 前期比の場合のみゼロラインを追加
-        if view_type == "前期比":
-            zero_line = alt.Chart(pd.DataFrame({'y': [0]})).mark_rule(color='red', strokeDash=[5, 5]).encode(y='y')
-            st.altair_chart(line_chart + zero_line, use_container_width=True)
-        else:
-            st.altair_chart(line_chart, use_container_width=True)
-
-    else:
-        st.info("グラフを表示するにはカテゴリを選択してください。")
-
-if __name__ == "__main__":
-    main()
+        # 前期比の場合のみゼロライン
