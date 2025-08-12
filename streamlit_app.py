@@ -1,2 +1,5 @@
-for _ in range(5):
-  print("test")
+import streamlit as st
+
+# 表示するテキスト
+st.write("test")
+
