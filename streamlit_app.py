@@ -61,16 +61,40 @@ def main():
         # グラフ描画のためのDataFrameを準備
         chart_df = plot_df[[selected_column]].reset_index()
         
-        # Altairでグラフを描画
-        chart = alt.Chart(chart_df).mark_line(point=True).encode(
-            x=alt.X('年月', axis=alt.Axis(title='年月')),
-            y=alt.Y(selected_column, axis=alt.Axis(title='指数')),
-            tooltip=['年月', alt.Tooltip(selected_column, title=selected_column)]
-        ).interactive()
+        # 前年比の計算
+        chart_df['yyyymm_int'] = chart_df['年月'].str[:4].astype(int) * 100 + chart_df['年月'].str[5:7].astype(int)
+        chart_df['yyyymm_prev'] = (chart_df['yyyymm_int'] - 100).astype(str).str.zfill(6)
         
-        st.altair_chart(chart, use_container_width=True)
-    else:
-        st.info("グラフを表示するにはカテゴリを選択してください。")
+        # 前年同月のデータを結合
+        chart_df = pd.merge(chart_df, chart_df[['yyyymm_int', selected_column]], 
+                            left_on='yyyymm_prev', right_on='yyyymm_int', 
+                            suffixes=('', '_prev'))
+        
+        # 前年比（％）を計算
+        chart_df['前年比'] = ((chart_df[selected_column] / chart_df[selected_column + '_prev']) - 1) * 100
 
-if __name__ == "__main__":
-    main()
+        # Altairで折れ線グラフ（CPI）を作成
+        line_chart = alt.Chart(chart_df).mark_line(point=True, color='blue').encode(
+            x=alt.X('年月', axis=alt.Axis(title='年月')),
+            y=alt.Y(selected_column, axis=alt.Axis(title='指数'))
+        )
+        
+        # Altairで棒グラフ（前年比）を作成
+        bar_chart = alt.Chart(chart_df).mark_bar(color='red', opacity=0.4).encode(
+            x='年月',
+            y=alt.Y('前年比', axis=alt.Axis(title='前年比 (%)', titleColor='red'))
+        )
+        
+        # ツールチップの定義
+        tooltip = [
+            alt.Tooltip('年月', title='年月'),
+            alt.Tooltip(selected_column, title='指数', format='.2f'),
+            alt.Tooltip('前年比', title='前年比', format='.2f')
+        ]
+        
+        # 折れ線グラフと棒グラフを重ね合わせ
+        combined_chart = alt.layer(
+            line_chart.encode(tooltip=tooltip), 
+            bar_chart.encode(tooltip=tooltip)
+        ).resolve_scale(
+            y='independent'  #
