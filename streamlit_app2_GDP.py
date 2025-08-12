@@ -111,21 +111,37 @@ def main():
     for i, row in df.iterrows():
         quarter_str = str(row['四半期']).strip().replace('.', '')
         
-        # '2024/1-3'のような形式から年と月を抽出
-        match_with_year = re.search(r'(\d{4})/(\d{1,2})', quarter_str)
-        # '4-6'のような形式から月を抽出
-        match_without_year = re.search(r'(\d{1,2})', quarter_str)
-        
-        if match_with_year:
-            current_year = int(match_with_year.group(1))
-            month = int(match_with_year.group(2))
-            df.loc[i, 'date'] = datetime(current_year, month, 1)
-        elif current_year and match_without_year:
-            month = int(match_without_year.group(1))
-            df.loc[i, 'date'] = datetime(current_year, month, 1)
-        else:
-            # どちらのパターンにも一致しない場合は元の文字列を保持
-            df.loc[i, 'date'] = None
+        # 先頭4桁が数字のパターンをチェック
+        if re.match(r'^\d{4}', quarter_str):
+            current_year = int(quarter_str[:4])
+            
+            if '1-3' in quarter_str:
+                month = 1
+            elif '4-6' in quarter_str:
+                month = 4
+            elif '7-9' in quarter_str:
+                month = 7
+            elif '10-12' in quarter_str:
+                month = 10
+            else:
+                # 該当なし
+                continue
+        # 先頭4桁が数字以外で年がないパターンをチェック
+        elif current_year:
+            if '4-6' in quarter_str:
+                month = 4
+            elif '7-9' in quarter_str:
+                month = 7
+            elif '10-12' in quarter_str:
+                month = 10
+            elif '1-3' in quarter_str:
+                # 次の年になるため、current_yearをインクリメント
+                current_year += 1
+                month = 1
+            else:
+                continue
+
+        df.loc[i, 'date'] = datetime(current_year, month, 1)
 
     # グラフ表示用のデータフレームを準備
     plot_df = df.set_index('date')
@@ -155,12 +171,4 @@ def main():
         # 前期比の場合のみゼロラインを追加
         if view_type == "前期比":
             zero_line = alt.Chart(pd.DataFrame({'y': [0]})).mark_rule(color='red', strokeDash=[5, 5]).encode(y='y')
-            st.altair_chart(line_chart + zero_line, use_container_width=True)
-        else:
-            st.altair_chart(line_chart, use_container_width=True)
-
-    else:
-        st.info("グラフを表示するにはカテゴリを選択してください。")
-
-if __name__ == "__main__":
-    main()
+            st.altair_chart(line_
