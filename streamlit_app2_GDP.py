@@ -15,21 +15,15 @@ def get_gdp_data():
         response.raise_for_status()  # HTTPエラーがあれば例外を発生させる
         csv_data = io.BytesIO(response.content)
 
-        # ヘッダーとして使用する行を文字列として読み込む
-        header_df = pd.read_csv(csv_data, encoding='shift_jis', header=None, nrows=5, dtype=str)
+        # ヘッダーとして使用する行を文字列として読み込む（3行目から6行目）
+        header_df = pd.read_csv(csv_data, encoding='shift_jis', header=None, skiprows=2, nrows=4, dtype=str)
 
-        # NaNを空文字列に変換し、前方の値で埋める（forward fill）
-        header_df = header_df.fillna('').replace('nan', '')
-        header_df = header_df.replace('', pd.NA).ffill(axis=1).fillna('')
-
-        # ヘッダー行を結合して新しい列名リストを作成
-        # 各要素が文字列であることを確認して結合
-        new_columns = ['_'.join(filter(None, col)).strip() for col in header_df.T.values]
-
-        # 「実質季節調整系列_Real, Seasonally Adjusted Series_」を削除
-        new_columns = [col.replace('実質季節調整系列_Real, Seasonally Adjusted Series_', '').strip() for col in new_columns]
-        # 不要な「_」も削除
-        new_columns = [col.lstrip('_') for col in new_columns]
+        # 各列で空白ではない最初のセルを新しい列名として抽出
+        new_columns = []
+        for col in header_df.columns:
+            # 欠損値を除いた最初の値を新しい列名とする
+            first_non_na_value = header_df[col].dropna().iloc[0]
+            new_columns.append(first_non_na_value.strip())
 
         # 実際のデータを再度読み込む
         csv_data = io.BytesIO(response.content)
