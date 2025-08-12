@@ -26,6 +26,11 @@ def get_gdp_data():
         # 各要素が文字列であることを確認して結合
         new_columns = ['_'.join(filter(None, col)).strip() for col in header_df.T.values]
 
+        # 「実質季節調整系列_Real, Seasonally Adjusted Series_」を削除
+        new_columns = [col.replace('実質季節調整系列_Real, Seasonally Adjusted Series_', '').strip() for col in new_columns]
+        # 不要な「_」も削除
+        new_columns = [col.lstrip('_') for col in new_columns]
+
         # 実際のデータを再度読み込む
         csv_data = io.BytesIO(response.content)
         df = pd.read_csv(csv_data, encoding='shift_jis', header=None, skiprows=8)
