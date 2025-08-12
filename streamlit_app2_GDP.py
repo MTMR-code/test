@@ -73,12 +73,6 @@ def main():
     
     gaku_df, ritu_df = get_gdp_data()
     
-    if st.checkbox("Show raw dataframes for debugging"):
-        st.subheader("Gaku DataFrame (実額)")
-        st.dataframe(gaku_df)
-        st.subheader("Ritu DataFrame (前期比)")
-        st.dataframe(ritu_df)
-
     if gaku_df.empty or ritu_df.empty:
         st.warning("データを取得できませんでした。URLを確認してください。")
         return
@@ -104,13 +98,11 @@ def main():
     
     # 行番号を基準に年と四半期を生成するロジック
     start_year = 1994
-    start_month = 1
     
     def generate_quarter_label(index):
-        # 1行目はインデックス0のため、7行目に対応させるために +7
-        total_quarters = 7 + index
-        year = start_year + total_quarters // 4
-        quarter_num = total_quarters % 4
+        # インデックス0のデータは1994年1-3月期に対応
+        year = start_year + index // 4
+        quarter_num = index % 4
         
         if quarter_num == 0:
             month = 1
@@ -134,6 +126,11 @@ def main():
 
     # カテゴリの選択
     columns_to_plot = [col for col in plot_df.columns if col != '四半期']
+    
+    # 前期比の場合、特定の列を除外
+    if view_type == "前期比":
+        columns_to_plot = [col for col in columns_to_plot if col not in ['民間在庫', '公的在庫']]
+        
     selected_column = st.selectbox("カテゴリを選択してください", columns_to_plot)
 
     if selected_column:
