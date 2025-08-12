@@ -15,12 +15,21 @@ def get_gdp_data():
         response.raise_for_status()  # HTTPエラーがあれば例外を発生させる
         csv_data = io.BytesIO(response.content)
 
-        # ヘッダーを複数行読み込むため、最初の読み込みでヘッダーを指定しない
-        df = pd.read_csv(csv_data, encoding='shift_jis', header=None, skiprows=6)
+        # ヘッダーとして使用する行を特定
+        # 3行目、4行目、5行目の情報を利用する
+        header_df = pd.read_csv(csv_data, encoding='shift_jis', header=None, nrows=5)
 
-        # 8行目（インデックス7）の値を新しい列名として設定
-        df.columns = df.iloc[1]
-        df = df[2:] # 不要なヘッダー行を削除
+        # 欠損値を前の値で埋める（forward fill）
+        header_df = header_df.fillna(method='ffill', axis=1)
+
+        # ヘッダー行を結合して新しい列名リストを作成
+        new_columns = ['_'.join(col).strip() for col in header_df.values]
+
+        # 実際のデータを読み込む
+        df = pd.read_csv(io.BytesIO(response.content), encoding='shift_jis', header=None, skiprows=8)
+
+        # 新しい列名を設定
+        df.columns = new_columns
 
         # 最初の列をインデックスとして設定し、名前を'四半期'に変更
         df = df.set_index(df.columns[0])
