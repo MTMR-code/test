@@ -15,16 +15,13 @@ def get_cpi_data():
         response.raise_for_status()  # HTTPエラーがあれば例外を発生させる
         csv_data = io.BytesIO(response.content)
 
-        # skiprows=6で正しいヘッダー行を読み込む
-        # usecols=[0, 1, ..., 70] のように必要な列のみを指定して読み込む
-        # `zmi2020s.csv`のヘッダーは71列目まで日本語のカテゴリ名が続いている
-        df = pd.read_csv(csv_data, encoding='shift_jis', skiprows=6, usecols=range(71))
+        # 1行目をヘッダーとして読み込み、2行目から6行目をスキップ
+        df = pd.read_csv(csv_data, encoding='shift_jis', header=0, skiprows=list(range(1, 7)))
 
-        # 最初の列名が自動で設定されないため、手動で変更
-        df.rename(columns={df.columns[0]: 'yyyymm'}, inplace=True)
+        # 最初の列名が「類・品目」となるので、yyyymmに変更
+        df.rename(columns={'類・品目': 'yyyymm'}, inplace=True)
         
-        # 不要な列を削除する (この段階では必要に応じてコメントアウト/調整)
-        # 例えば、列名にNaNが含まれる列や、特定の文字列を含む列を削除
+        # 不要な列を削除 (データがすべて欠損値の列)
         df = df.dropna(axis=1, how='all')
 
         # yyyymm以外の列を数値型に変換
@@ -55,8 +52,7 @@ def main():
     plot_df = df.set_index('年月')
     
     # カテゴリの選択
-    # カテゴリのリストから、数値以外の要素（yyyymmなど）を除外
-    columns_to_plot = [col for col in plot_df.columns if pd.api.types.is_numeric_dtype(plot_df[col])]
+    columns_to_plot = [col for col in plot_df.columns if col != 'yyyymm']
     selected_column = st.selectbox("カテゴリを選択してください", columns_to_plot)
 
     if selected_column:
