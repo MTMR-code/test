@@ -15,18 +15,20 @@ def get_gdp_data():
         response.raise_for_status()  # HTTPエラーがあれば例外を発生させる
         csv_data = io.BytesIO(response.content)
 
-        # ヘッダーとして使用する行を特定
-        # 3行目、4行目、5行目の情報を利用する
-        header_df = pd.read_csv(csv_data, encoding='shift_jis', header=None, nrows=5)
+        # ヘッダーとして使用する行を文字列として読み込む
+        header_df = pd.read_csv(csv_data, encoding='shift_jis', header=None, nrows=5, dtype=str)
 
-        # 欠損値を前の値で埋める（forward fill）
-        header_df = header_df.fillna(method='ffill', axis=1)
+        # NaNを空文字列に変換し、前方の値で埋める（forward fill）
+        header_df = header_df.fillna('').replace('nan', '')
+        header_df = header_df.replace('', pd.NA).ffill(axis=1).fillna('')
 
         # ヘッダー行を結合して新しい列名リストを作成
-        new_columns = ['_'.join(col).strip() for col in header_df.values]
+        # 各要素が文字列であることを確認して結合
+        new_columns = ['_'.join(filter(None, col)).strip() for col in header_df.T.values]
 
-        # 実際のデータを読み込む
-        df = pd.read_csv(io.BytesIO(response.content), encoding='shift_jis', header=None, skiprows=8)
+        # 実際のデータを再度読み込む
+        csv_data = io.BytesIO(response.content)
+        df = pd.read_csv(csv_data, encoding='shift_jis', header=None, skiprows=8)
 
         # 新しい列名を設定
         df.columns = new_columns
@@ -38,7 +40,7 @@ def get_gdp_data():
         # 不要な列を削除 (データがすべて欠損値の列)
         df = df.dropna(axis=1, how='all')
 
-        # 数値データに変換できない値をNaNに変換し、数値型に変換
+        # 数値データに変換
         df = df.apply(pd.to_numeric, errors='coerce')
         
         return df
@@ -83,19 +85,3 @@ def main():
             y=alt.Y(selected_column, axis=alt.Axis(title='前期比 (%)', titleColor='blue')),
             tooltip=[
                 alt.Tooltip('四半期', title='四半期'),
-                alt.Tooltip(selected_column, title='前期比 (%)', format='.2f')
-            ]
-        ).properties(
-            title=f"GDP（{selected_column}）の前期比推移"
-        )
-        
-        # ゼロラインを追加
-        zero_line = alt.Chart(pd.DataFrame({'y': [0]})).mark_rule(color='red', strokeDash=[5, 5]).encode(y='y')
-
-        st.altair_chart(line_chart + zero_line, use_container_width=True)
-
-    else:
-        st.info("グラフを表示するにはカテゴリを選択してください。")
-
-if __name__ == "__main__":
-    main()
