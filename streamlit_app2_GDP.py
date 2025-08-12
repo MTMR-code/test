@@ -85,3 +85,19 @@ def main():
             y=alt.Y(selected_column, axis=alt.Axis(title='前期比 (%)', titleColor='blue')),
             tooltip=[
                 alt.Tooltip('四半期', title='四半期'),
+                alt.Tooltip(selected_column, title='前期比 (%)', format='.2f')
+            ]
+        ).properties(
+            title=f"GDP（{selected_column}）の前期比推移"
+        )
+        
+        # ゼロラインを追加
+        zero_line = alt.Chart(pd.DataFrame({'y': [0]})).mark_rule(color='red', strokeDash=[5, 5]).encode(y='y')
+
+        st.altair_chart(line_chart + zero_line, use_container_width=True)
+
+    else:
+        st.info("グラフを表示するにはカテゴリを選択してください。")
+
+if __name__ == "__main__":
+    main()
