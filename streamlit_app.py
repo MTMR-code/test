@@ -20,7 +20,7 @@ def get_cpi_data():
 
         # 最初の列名が「類・品目」となるので、yyyymmに変更
         df.rename(columns={'類・品目': 'yyyymm'}, inplace=True)
-        
+
         # 不要な列を削除 (データがすべて欠損値の列)
         df = df.dropna(axis=1, how='all')
 
@@ -37,7 +37,7 @@ def get_cpi_data():
 # アプリのメイン処理
 def main():
     st.title("CPI（消費者物価指数）グラフ表示アプリ")
-    
+
     df = get_cpi_data()
 
     if df.empty:
@@ -47,63 +47,63 @@ def main():
     # 日付列の整形
     df['年月'] = df['yyyymm'].astype(str).str.slice(0, 6)
     df['年月'] = df['年月'].apply(lambda x: f"{x[:4]}年{x[4:6]}月" if len(x) == 6 else None)
-    
+
     # グラフ表示用のデータフレームを準備
     plot_df = df.set_index('年月')
-    
+
     # カテゴリの選択
     columns_to_plot = [col for col in plot_df.columns if col != 'yyyymm']
     selected_column = st.selectbox("カテゴリを選択してください", columns_to_plot)
 
     if selected_column:
         st.subheader(f"CPIの推移: {selected_column}")
-        
+
         # グラフ描画のためのDataFrameを準備
         chart_df = plot_df[[selected_column]].reset_index()
-        
+
         # 前年比の計算
         chart_df['yyyymm_int'] = chart_df['年月'].str[:4].astype(int) * 100 + chart_df['年月'].str[5:7].astype(int)
         chart_df['yyyymm_prev'] = chart_df['yyyymm_int'] - 100
-        
+
         # 前年同月のデータを結合
-        chart_df = pd.merge(chart_df, chart_df[['yyyymm_int', selected_column]], 
-                            left_on='yyyymm_prev', right_on='yyyymm_int', 
+        chart_df = pd.merge(chart_df, chart_df[['yyyymm_int', selected_column]],
+                            left_on='yyyymm_prev', right_on='yyyymm_int',
                             suffixes=('', '_prev'))
-        
-        # 前年比（％）を計算
-        chart_df['前年比'] = ((chart_df[selected_df[selected_column] / chart_df[selected_column + '_prev']) - 1) * 100
+
+        # ★修正箇所★ 正しい構文に修正
+        chart_df['前年比'] = ((chart_df[selected_column] / chart_df[selected_column + '_prev']) - 1) * 100
 
         # Altairで折れ線グラフ（CPI）を作成
         line_chart = alt.Chart(chart_df).mark_line(point=True, color='blue').encode(
             x=alt.X('年月', axis=alt.Axis(title='年月', titleColor='black', labelColor='black')),
             y=alt.Y(selected_column, axis=alt.Axis(title='指数', titleColor='black', labelColor='black'))
         )
-        
+
         # Altairで棒グラフ（前年比）を作成
         bar_chart = alt.Chart(chart_df).mark_bar(color='red', opacity=0.4).encode(
             x='年月',
             y=alt.Y('前年比', axis=alt.Axis(title='前年比 (%)', titleColor='red'))
         )
-        
+
         # ツールチップの定義
         tooltip = [
             alt.Tooltip('年月', title='年月'),
             alt.Tooltip(selected_column, title='指数', format='.2f'),
             alt.Tooltip('前年比', title='前年比', format='.2f')
         ]
-        
+
         # 折れ線グラフと棒グラフを重ね合わせ
         combined_chart = alt.layer(
-            line_chart.encode(tooltip=tooltip), 
+            line_chart.encode(tooltip=tooltip),
             bar_chart.encode(tooltip=tooltip)
         ).resolve_scale(
             y='independent'  # 独立したY軸を右側に表示
         ).properties(
             title=f"CPI（{selected_column}）の推移と前年比"
         )
-        
+
         st.altair_chart(combined_chart, use_container_width=True)
-        
+
     else:
         st.info("グラフを表示するにはカテゴリを選択してください。")
 
