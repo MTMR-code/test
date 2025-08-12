@@ -149,4 +149,15 @@ def main():
             title=f"GDP（{selected_column}）{title_suffix}"
         )
         
-        # 前期比の場合のみゼロライン
+        # 前期比の場合のみゼロラインを追加
+        if view_type == "前期比":
+            zero_line = alt.Chart(pd.DataFrame({'y': [0]})).mark_rule(color='red', strokeDash=[5, 5]).encode(y='y')
+            st.altair_chart(line_chart + zero_line, use_container_width=True)
+        else:
+            st.altair_chart(line_chart, use_container_width=True)
+
+    else:
+        st.info("グラフを表示するにはカテゴリを選択してください。")
+
+if __name__ == "__main__":
+    main()
