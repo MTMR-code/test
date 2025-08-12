@@ -105,19 +105,19 @@ def main():
     # 四半期列を文字列に変換
     df['四半期'] = df['四半期'].astype(str).str.strip()
 
-    # 年を補足するロジックを追加
+    # 年を補足するロジックを修正
     current_year = None
     for i, row in df.iterrows():
-        # "YYYY/ 1- 3." のような形式から年を抽出
+        # "YYYY/1-3."のような形式から年を抽出
         match = re.search(r'(\d{4})/', row['四半期'])
         if match:
             current_year = match.group(1)
-            # 年を含む場合はそのまま使用
-            df.loc[i, '四半期'] = row['四半期'].replace('/', '年').replace('.', '月期').strip()
+            # 年を含む場合はそのまま使用し、形式を調整
+            df.loc[i, '四半期'] = row['四半期'].replace('.', '').replace('/', '年').strip()
         
-        # " 4- 6." のような形式に年を補足
+        # "4-6."のような形式に年を補足
         elif current_year:
-            quarter_text = row['四半期'].replace('.', '月期').strip()
+            quarter_text = row['四半期'].replace('.', '').strip()
             df.loc[i, '四半期'] = f"{current_year}年{quarter_text}"
 
     # グラフ表示用のデータフレームを準備
