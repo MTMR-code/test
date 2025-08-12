@@ -1,5 +1,6 @@
 import streamlit as st
 
 # 表示するテキスト
-st.write("test")
+for _ in range(5):
+  st.write("test")
 
