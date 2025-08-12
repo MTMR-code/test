@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import io
 import requests
-import plotly.graph_objects as go
+import altair as alt
 
 # データの取得とキャッシュ
 @st.cache_data
@@ -58,25 +58,17 @@ def main():
     if selected_column:
         st.subheader(f"CPIの推移: {selected_column}")
         
-        # グラフの描画 (plotly.graph_objectsを使用)
-        fig = go.Figure()
+        # グラフ描画のためのDataFrameを準備
+        chart_df = plot_df[[selected_column]].reset_index()
         
-        fig.add_trace(go.Scatter(
-            x=plot_df.index,
-            y=plot_df[selected_column],
-            mode='lines+markers',
-            name=selected_column
-        ))
+        # Altairでグラフを描画
+        chart = alt.Chart(chart_df).mark_line(point=True).encode(
+            x=alt.X('年月', axis=alt.Axis(title='年月')),
+            y=alt.Y(selected_column, axis=alt.Axis(title='指数')),
+            tooltip=['年月', selected_column]
+        ).interactive()
         
-        # グラフのレイアウトを調整
-        fig.update_layout(
-            title=f"CPI（{selected_column}）の推移",
-            xaxis_title="年月",
-            yaxis_title="指数",
-            hovermode="x unified",
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
+        st.altair_chart(chart, use_container_width=True)
     else:
         st.info("グラフを表示するにはカテゴリを選択してください。")
 
