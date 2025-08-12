@@ -62,10 +62,7 @@ def main():
         chart_df = plot_df[[selected_column]].reset_index()
         
         # 前年比の計算
-        # yyyymm_intを整数型で作成
         chart_df['yyyymm_int'] = chart_df['年月'].str[:4].astype(int) * 100 + chart_df['年月'].str[5:7].astype(int)
-        
-        # ★修正箇所★ yyyymm_prevを整数型で作成
         chart_df['yyyymm_prev'] = chart_df['yyyymm_int'] - 100
         
         # 前年同月のデータを結合
@@ -74,12 +71,12 @@ def main():
                             suffixes=('', '_prev'))
         
         # 前年比（％）を計算
-        chart_df['前年比'] = ((chart_df[selected_column] / chart_df[selected_column + '_prev']) - 1) * 100
+        chart_df['前年比'] = ((chart_df[selected_df[selected_column] / chart_df[selected_column + '_prev']) - 1) * 100
 
         # Altairで折れ線グラフ（CPI）を作成
         line_chart = alt.Chart(chart_df).mark_line(point=True, color='blue').encode(
-            x=alt.X('年月', axis=alt.Axis(title='年月')),
-            y=alt.Y(selected_column, axis=alt.Axis(title='指数'))
+            x=alt.X('年月', axis=alt.Axis(title='年月', titleColor='black', labelColor='black')),
+            y=alt.Y(selected_column, axis=alt.Axis(title='指数', titleColor='black', labelColor='black'))
         )
         
         # Altairで棒グラフ（前年比）を作成
