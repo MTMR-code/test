@@ -93,8 +93,12 @@ def main():
         y_axis_title = '前期比 (%)'
         title_suffix = 'の前期比推移'
 
+    # ここに修正を加えました。インデックスからNaNの行を削除します。
+    df = df.dropna(how='all')
+
     # インデックス（四半期）から日付列を生成する新しいロジック
     def parse_quarter(quarter_str):
+        # 末尾のドットを削除
         quarter_str = quarter_str.replace('.', '').strip()
         parts = quarter_str.split('/')
         year = int(parts[0])
