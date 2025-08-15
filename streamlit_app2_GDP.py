@@ -7,9 +7,7 @@ from datetime import datetime
 
 # ヘッダー処理関数
 def process_gdp_header(csv_data, skiprows, nrows):
-    """
-    CSVデータのヘッダーを読み込み、列名を生成する関数
-    """
+    """   CSVデータのヘッダーを読み込み、列名を生成する関数    """
     header_df = pd.read_csv(io.BytesIO(csv_data), encoding='shift_jis', header=None, skiprows=skiprows, nrows=nrows, dtype=str)
     new_columns = []
     for col in header_df.columns:
