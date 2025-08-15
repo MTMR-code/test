@@ -1,35 +1,13 @@
-import streamlit as st
-import pandas as pd
-import io
-import requests
-import altair as alt
-from datetime import datetime
-
-# ヘッダー処理関数
-def process_gdp_header(csv_data, skiprows, nrows):
-    """
-    CSVデータのヘッダーを読み込み、列名を生成する関数
-    """
-    header_df = pd.read_csv(io.BytesIO(csv_data), encoding='shift_jis', header=None, skiprows=skiprows, nrows=nrows, dtype=str)
-    new_columns = []
-    for col in header_df.columns:
-        first_non_na = header_df[col].dropna()
-        if not first_non_na.empty:
-            new_columns.append(first_non_na.iloc[0].strip())
-        else:
-            new_columns.append(f'Unnamed_Col_{col}')
-    return new_columns
-
 # データの取得とキャッシュ
 @st.cache_data
 def get_gdp_data():
     """内閣府からGDPの実額と前期比のCSVデータを取得し、整形する関数"""
     url_gaku = "https://www.esri.cao.go.jp/jp/sna/data/data_list/sokuhou/files/2025/qe252/tables/gaku-jk2521.csv"
     url_ritu = "https://www.esri.cao.go.jp/jp/sna/data/data_list/sokuhou/files/2025/qe252/tables/ritu-jk2521.csv"
-
+    
     gaku_df = pd.DataFrame()
     ritu_df = pd.DataFrame()
-
+    
     try:
         # 実額データの取得と整形
         response_gaku = requests.get(url_gaku)
@@ -67,6 +45,19 @@ def get_gdp_data():
         st.error(f"データの取得中にエラーが発生しました: {e}")
         return pd.DataFrame(), pd.DataFrame()
 
+# ヘッダー処理関数（変更なし）
+def process_gdp_header(csv_data, skiprows, nrows):
+    """CSVデータのヘッダーを読み込み、列名を生成する関数"""
+    header_df = pd.read_csv(io.BytesIO(csv_data), encoding='shift_jis', header=None, skiprows=skiprows, nrows=nrows, dtype=str)
+    new_columns = []
+    for col in header_df.columns:
+        first_non_na = header_df[col].dropna()
+        if not first_non_na.empty:
+            new_columns.append(first_non_na.iloc[0].strip())
+        else:
+            new_columns.append(f'Unnamed_Col_{col}')
+    return new_columns
+
 # アプリのメイン処理
 def main():
     st.title("GDP（国内総生産）グラフ表示アプリ（2025年4-6月期1次QE値、2015年基準実質季節調整系列）")
@@ -93,36 +84,21 @@ def main():
         y_axis_title = '前期比 (%)'
         title_suffix = 'の前期比推移'
 
-    # インデックス（四半期）を整形
-    df.reset_index(inplace=True)
-    
-    # 行番号を基準に年と四半期を生成するロジック
-    start_year = 1994
-    
-    def generate_quarter_label(index):
-        # インデックス0のデータは1994年1-3月期に対応
-        year = start_year + index // 4
-        quarter_num = index % 4
-        
-        if quarter_num == 0:
-            month = 1
-            quarter_str = "1-3"
-        elif quarter_num == 1:
-            month = 4
-            quarter_str = "4-6"
-        elif quarter_num == 2:
-            month = 7
-            quarter_str = "7-9"
-        else:
-            month = 10
-            quarter_str = "10-12"
-            
-        return f"{year}年{quarter_str}月期", datetime(year, month, 1)
+    # インデックス（四半期）を整形し、日付列を生成
+    # '1994/ 1- 3.' の形式から datetime オブジェクトを作成
+    def parse_quarter(quarter_str):
+        # 末尾のドットを削除
+        quarter_str = quarter_str.replace('.', '').strip()
+        parts = quarter_str.split('/')
+        year = int(parts[0])
+        quarter_months = parts[1].split('-')
+        month = int(quarter_months[0])
+        return datetime(year, month, 1)
 
-    df['四半期'], df['date'] = zip(*[generate_quarter_label(i) for i in df.index])
-            
+    df['date'] = df.index.map(parse_quarter)
+    
     # グラフ表示用のデータフレームを準備
-    plot_df = df.set_index('date')
+    plot_df = df.reset_index().set_index('date')
 
     # カテゴリの選択
     columns_to_plot = [col for col in plot_df.columns if col != '四半期']
