@@ -24,8 +24,8 @@ def process_gdp_header(csv_data, skiprows, nrows):
 @st.cache_data
 def get_gdp_data():
     """内閣府からGDPの実額と前期比のCSVデータを取得し、整形する関数"""
-    url_gaku = "https://www.esri.cao.go.jp/sna/data/data_list/sokuhou/files/2025/qe251_2/tables/gaku-jk2512.csv"
-    url_ritu = "https://www.esri.cao.jp/jp/sna/data/data_list/sokuhou/files/2025/qe251_2/tables/ritu-jk2512.csv"
+    url_gaku = "https://www.esri.cao.go.jp/jp/sna/data/data_list/sokuhou/files/2025/qe252/tables/gaku-jk2521.csv"
+    url_ritu = "https://www.esri.cao.go.jp/jp/sna/data/data_list/sokuhou/files/2025/qe252/tables/ritu-jk2521.csv"
 
     gaku_df = pd.DataFrame()
     ritu_df = pd.DataFrame()
