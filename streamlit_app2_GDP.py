@@ -7,7 +7,9 @@ from datetime import datetime
 
 # ヘッダー処理関数
 def process_gdp_header(csv_data, skiprows, nrows):
-"""CSVデータのヘッダーを読み込み、列名を生成する関数"""
+    """
+    CSVデータのヘッダーを読み込み、列名を生成する関数
+    """
     header_df = pd.read_csv(io.BytesIO(csv_data), encoding='shift_jis', header=None, skiprows=skiprows, nrows=nrows, dtype=str)
     new_columns = []
     for col in header_df.columns:
@@ -64,19 +66,6 @@ def get_gdp_data():
     except requests.exceptions.RequestException as e:
         st.error(f"データの取得中にエラーが発生しました: {e}")
         return pd.DataFrame(), pd.DataFrame()
-
-# ヘッダー処理関数（変更なし）
-def process_gdp_header(csv_data, skiprows, nrows):
-    """CSVデータのヘッダーを読み込み、列名を生成する関数"""
-    header_df = pd.read_csv(io.BytesIO(csv_data), encoding='shift_jis', header=None, skiprows=skiprows, nrows=nrows, dtype=str)
-    new_columns = []
-    for col in header_df.columns:
-        first_non_na = header_df[col].dropna()
-        if not first_non_na.empty:
-            new_columns.append(first_non_na.iloc[0].strip())
-        else:
-            new_columns.append(f'Unnamed_Col_{col}')
-    return new_columns
 
 # アプリのメイン処理
 def main():
