@@ -69,7 +69,7 @@ def get_gdp_data():
 
 # アプリのメイン処理
 def main():
-    st.title("GDP（国内総生産）グラフ表示アプリ（2025年1-3月期2次QE値、2015年基準実質季節調整系列）")
+    st.title("GDP（国内総生産）グラフ表示アプリ（2025年4-6月期1次QE値、2015年基準実質季節調整系列）")
     
     gaku_df, ritu_df = get_gdp_data()
     
