@@ -69,7 +69,7 @@ def get_gdp_data():
 
 # アプリのメイン処理
 def main():
-    st.title("GDP（国内総生産）グラフ表示アプリ（2025年1-3月期2次QE値、2015年基準実質季節調整系列）")
+    st.title("GDP（国内総生産）グラフ表示アプリ（2025年4-6月期1次QE値、2015年基準実質季節調整系列）")
     
     gaku_df, ritu_df = get_gdp_data()
     
@@ -93,23 +93,36 @@ def main():
         y_axis_title = '前期比 (%)'
         title_suffix = 'の前期比推移'
 
-    # インデックスに'/'が含まれている行のみをフィルタリング
-    df = df[df.index.str.contains('/')]
-
-    # インデックス（四半期）から日付列を生成する新しいロジック
-    def parse_quarter(quarter_str):
-        # 末尾のドットを削除
-        quarter_str = quarter_str.replace('.', '').strip()
-        parts = quarter_str.split('/')
-        year = int(parts[0])
-        quarter_months = parts[1].split('-')
-        month = int(quarter_months[0])
-        return datetime(year, month, 1)
-
-    df['date'] = df.index.map(parse_quarter)
+    # インデックス（四半期）を整形
+    df.reset_index(inplace=True)
     
+    # 行番号を基準に年と四半期を生成するロジック
+    start_year = 1994
+    
+    def generate_quarter_label(index):
+        # インデックス0のデータは1994年1-3月期に対応
+        year = start_year + index // 4
+        quarter_num = index % 4
+        
+        if quarter_num == 0:
+            month = 1
+            quarter_str = "1-3"
+        elif quarter_num == 1:
+            month = 4
+            quarter_str = "4-6"
+        elif quarter_num == 2:
+            month = 7
+            quarter_str = "7-9"
+        else:
+            month = 10
+            quarter_str = "10-12"
+            
+        return f"{year}年{quarter_str}月期", datetime(year, month, 1)
+
+    df['四半期'], df['date'] = zip(*[generate_quarter_label(i) for i in df.index])
+            
     # グラフ表示用のデータフレームを準備
-    plot_df = df.reset_index().set_index('date')
+    plot_df = df.set_index('date')
 
     # カテゴリの選択
     columns_to_plot = [col for col in plot_df.columns if col != '四半期']
