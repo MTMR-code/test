@@ -25,7 +25,7 @@ def process_gdp_header(csv_data, skiprows, nrows):
 def get_gdp_data():
     """内閣府からGDPの実額と前期比のCSVデータを取得し、整形する関数"""
     url_gaku = "https://www.esri.cao.go.jp/jp/sna/data/data_list/sokuhou/files/2025/qe251_2/tables/gaku-jk2512.csv"
-    url_ritu = "https://www.esri.cao.go.jp/jp/sna/data/data_list/sokuhou/files/2025/qe251_2/tables/ritu-jk2512.csv"
+    url_ritu = "https://www.esri.cao.jp/jp/sna/data/data_list/sokuhou/files/2025/qe251_2/tables/ritu-jk2512.csv"
 
     gaku_df = pd.DataFrame()
     ritu_df = pd.DataFrame()
@@ -93,8 +93,8 @@ def main():
         y_axis_title = '前期比 (%)'
         title_suffix = 'の前期比推移'
 
-    # ここに修正を加えました。インデックスからNaNの行を削除します。
-    df = df.dropna(how='all')
+    # インデックスに'/'が含まれている行のみをフィルタリング
+    df = df[df.index.str.contains('/')]
 
     # インデックス（四半期）から日付列を生成する新しいロジック
     def parse_quarter(quarter_str):
