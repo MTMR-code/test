@@ -1,3 +1,25 @@
+import streamlit as st
+import pandas as pd
+import io
+import requests
+import altair as alt
+from datetime import datetime
+
+# ヘッダー処理関数
+def process_gdp_header(csv_data, skiprows, nrows):
+    """
+    CSVデータのヘッダーを読み込み、列名を生成する関数
+    """
+    header_df = pd.read_csv(io.BytesIO(csv_data), encoding='shift_jis', header=None, skiprows=skiprows, nrows=nrows, dtype=str)
+    new_columns = []
+    for col in header_df.columns:
+        first_non_na = header_df[col].dropna()
+        if not first_non_na.empty:
+            new_columns.append(first_non_na.iloc[0].strip())
+        else:
+            new_columns.append(f'Unnamed_Col_{col}')
+    return new_columns
+
 # データの取得とキャッシュ
 @st.cache(allow_output_mutation=True)
 def get_gdp_data():
