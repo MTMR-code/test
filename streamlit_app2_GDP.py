@@ -1,5 +1,5 @@
 # データの取得とキャッシュ
-@st.cache_data
+@st.cache(allow_output_mutation=True)
 def get_gdp_data():
     """内閣府からGDPの実額と前期比のCSVデータを取得し、整形する関数"""
     url_gaku = "https://www.esri.cao.go.jp/jp/sna/data/data_list/sokuhou/files/2025/qe252/tables/gaku-jk2521.csv"
