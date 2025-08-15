@@ -21,15 +21,15 @@ def process_gdp_header(csv_data, skiprows, nrows):
     return new_columns
 
 # データの取得とキャッシュ
-@st.cache(allow_output_mutation=True)
+@st.cache_data
 def get_gdp_data():
     """内閣府からGDPの実額と前期比のCSVデータを取得し、整形する関数"""
-    url_gaku = "https://www.esri.cao.go.jp/jp/sna/data/data_list/sokuhou/files/2025/qe252/tables/gaku-jk2521.csv"
-    url_ritu = "https://www.esri.cao.go.jp/jp/sna/data/data_list/sokuhou/files/2025/qe252/tables/ritu-jk2521.csv"
-    
+    url_gaku = "https://www.esri.cao.go.jp/jp/sna/data/data_list/sokuhou/files/2025/qe251_2/tables/gaku-jk2512.csv"
+    url_ritu = "https://www.esri.cao.go.jp/jp/sna/data/data_list/sokuhou/files/2025/qe251_2/tables/ritu-jk2512.csv"
+
     gaku_df = pd.DataFrame()
     ritu_df = pd.DataFrame()
-    
+
     try:
         # 実額データの取得と整形
         response_gaku = requests.get(url_gaku)
@@ -69,7 +69,7 @@ def get_gdp_data():
 
 # アプリのメイン処理
 def main():
-    st.title("GDP（国内総生産）グラフ表示アプリ（2025年4-6月期1次QE値、2015年基準実質季節調整系列）")
+    st.title("GDP（国内総生産）グラフ表示アプリ（2025年1-3月期2次QE値、2015年基準実質季節調整系列）")
     
     gaku_df, ritu_df = get_gdp_data()
     
@@ -93,10 +93,8 @@ def main():
         y_axis_title = '前期比 (%)'
         title_suffix = 'の前期比推移'
 
-    # インデックス（四半期）を整形し、日付列を生成
-    # '1994/ 1- 3.' の形式から datetime オブジェクトを作成
+    # インデックス（四半期）から日付列を生成する新しいロジック
     def parse_quarter(quarter_str):
-        # 末尾のドットを削除
         quarter_str = quarter_str.replace('.', '').strip()
         parts = quarter_str.split('/')
         year = int(parts[0])
