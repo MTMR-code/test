@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import csv
 from io import StringIO
+import re
 
 @st.cache_data
 def load_data(url):
@@ -11,10 +12,8 @@ def load_data(url):
     try:
         res = requests.get(url, timeout=10)
         res.encoding = 'shift_jis'
-        
         csv_reader = csv.reader(StringIO(res.text))
         
-        # 1行目（ヘッダー）を読み込む
         header = next(csv_reader)
         
         # 2行目から6行目を無視
@@ -22,7 +21,6 @@ def load_data(url):
             next(csv_reader, None)
         
         data = list(csv_reader)
-        
         return header, data
     except requests.exceptions.RequestException as e:
         st.error(f"データ取得中にエラーが発生しました。URLを確認するか、再度お試しください: {e}")
@@ -39,20 +37,25 @@ def main():
     if not data:
         st.stop()
     
-    # 修正部分: 念のため、ヘッダーを出力して確認
-    st.write("ダウンロードしたCSVファイルのヘッダー:")
-    st.write(header)
-    
-    # 列名が変更されている可能性を考慮し、動的にインデックスを特定
+    # 動的なヘッダーインデックスの特定
     try:
         item_index = header.index('類・品目')
-        y2022_index = header.index('令和4年')
-        y2023_index = header.index('令和5年')
-    except ValueError:
-        st.error("CSVファイルのヘッダーに必要な列が見つかりません。データ形式が変更された可能性があります。")
+        
+        # '令和'で始まる列を正規表現で検索し、直近2年分を取得
+        year_columns = [col for col in header if re.match(r'令和\d+年', col)]
+        if len(year_columns) < 2:
+            raise ValueError("年を表す列が2つ以上見つかりませんでした。")
+        
+        # 最新の2年分を抽出
+        latest_year_columns = sorted(year_columns, key=lambda x: int(re.search(r'\d+', x).group()), reverse=True)[:2]
+        
+        y2023_index = header.index(latest_year_columns[0])
+        y2022_index = header.index(latest_year_columns[1])
+        
+    except (ValueError, IndexError):
+        st.error("CSVファイルのヘッダーに必要な列が見つかりません。データ形式が大幅に変更された可能性があります。")
         st.stop()
-
-    # 各品目の前年比を計算
+    
     calculated_data = []
     for row in data:
         try:
@@ -65,13 +68,11 @@ def main():
             
             if val_2022 != 0:
                 growth_rate = (val_2023 / val_2022 - 1) * 100
-                # 修正部分: 物価が下落している（前年比がマイナス）ものだけをリストに追加
                 if growth_rate < 0:
                     calculated_data.append({'品目': item, '前年比': f'{growth_rate:.2f}%'})
         except (ValueError, IndexError):
             continue
 
-    # 修正部分: 下落率の大きい（値が小さい）順にソートしてトップ10を取得
     falling_foods = sorted(calculated_data, key=lambda x: float(x['前年比'].strip('%')))[:10]
 
     st.subheader('物価が下落している食材リスト')
@@ -82,7 +83,6 @@ def main():
         [food['品目'] for food in falling_foods]
     )
 
-    # ダミーのレシピデータ
     recipes = {
         '豆腐': {'ジャンル': '和食', 'レシピ名': '簡単麻婆豆腐', '材料': '豆腐、ひき肉、長ねぎ、にんにく、しょうが、豆板醤', '作り方': 'ひき肉と香味野菜を炒め、調味料と水を加えて煮立てる。豆腐を加えて温める。'},
         '食パン': {'ジャンル': '洋食', 'レシピ名': 'カリカリチーズトースト', '材料': '食パン、とろけるチーズ', '作り方': '食パンにチーズを乗せ、オーブントースターで焼き色がつくまで焼く。'},
@@ -103,3 +103,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    
