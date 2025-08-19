@@ -3,7 +3,11 @@ import requests
 import csv
 from io import StringIO
 from datetime import datetime
-import jaconv
+
+# 全角数字を半角数字に変換するヘルパー関数
+def zenkaku_to_hankaku_digits(s):
+    """全角数字を半角数字に変換します。"""
+    return s.translate(str.maketrans('０１２３４５６７８９', '0123456789'))
 
 @st.cache_data
 def load_data(url):
@@ -49,7 +53,7 @@ def main():
 
     # 全角数字を半角に変換してからパースを試みる
     try:
-        half_width_date_str = jaconv.z2h(latest_date_str, kana=False, ascii=True, digit=True)
+        half_width_date_str = zenkaku_to_hankaku_digits(latest_date_str)
         latest_date = datetime.strptime(half_width_date_str, '%Y年%m月')
     except (ValueError, IndexError):
         st.error(f"CSVファイルの1列目の年月データ形式が予期せぬ形式です。例: 2023年01月, 2023年1月")
@@ -61,7 +65,7 @@ def main():
     
     prev_year_row = None
     for row in data:
-        if jaconv.z2h(row[0], kana=False, ascii=True, digit=True) == prev_year_date_str:
+        if zenkaku_to_hankaku_digits(row[0]) == prev_year_date_str:
             prev_year_row = row
             break
             
@@ -107,18 +111,4 @@ def main():
         '食パン': {'ジャンル': '洋食', 'レシピ名': 'カリカリチーズトースト', '材料': '食パン、とろけるチーズ', '作り方': '食パンにチーズを乗せ、オーブントースターで焼き色がつくまで焼く。'},
         '鶏卵': {'ジャンル': '和食', 'レシピ名': 'だし巻き卵', '材料': '鶏卵、だし汁、砂糖、醤油', '作り方': '卵を溶き、調味料と混ぜて焼く。'},
         '牛乳': {'ジャンル': '洋食', 'レシピ名': '牛乳たっぷりホワイトシチュー', '材料': '牛乳、鶏肉、じゃがいも、にんじん、玉ねぎ', '作り方': '野菜と鶏肉を炒め、水を加えて煮込む。火が通ったら牛乳を加え、シチュールウでとろみをつける。'},
-        '豚肉': {'ジャンル': '中華', 'レシピ名': '豚肉とピーマンの細切り炒め', '材料': '豚肉、ピーマン、筍、オイスターソース', '作り方': '細切りにした豚肉と野菜を炒め、調味料で味を調える。'},
-        '牛肉（国産品）': {'ジャンル': '和食', 'レシピ名': '牛肉のしぐれ煮', '材料': '牛肉、しょうが、醤油、みりん、砂糖', '作り方': '鍋に調味料を煮立たせ、細切りにした牛肉としょうがを加えて炒り煮にする。'}
-    }
-
-    if selected_food in recipes:
-        st.subheader(f'「{selected_food}」を使ったレシピ')
-        st.write(f"**ジャンル:** {recipes[selected_food]['ジャンル']}")
-        st.write(f"**レシピ名:** {recipes[selected_food]['レシピ名']}")
-        st.write(f"**材料:** {recipes[selected_food]['材料']}")
-        st.write(f"**作り方:** {recipes[selected_food]['作り方']}")
-    else:
-        st.info("選択された食材のレシピは現在準備中です。別の食材をお試しください。")
-
-if __name__ == '__main__':
-    main()
+        '豚肉': {'ジャンル': '中華', 'レシピ名': '豚肉とピーマンの細切り炒め', '材料': '豚肉、ピーマン、筍、オイスターソース', '作り方': '細切りにした豚肉と野菜を炒め、調味料で味を調
