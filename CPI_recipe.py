@@ -6,7 +6,8 @@ from io import StringIO
 @st.cache_data
 def load_data(url):
     """
-    指定されたURLからCSVデータをダウンロードし、パースする関数。
+    指定されたURLからCSVデータをダウンロードし、ヘッダーとデータを取得する関数。
+    2行目から6行目を無視してデータをパースします。
     """
     try:
         res = requests.get(url, timeout=10)
@@ -15,8 +16,13 @@ def load_data(url):
         # StringIOを使ってテキストデータをファイルのように読み込む
         csv_reader = csv.reader(StringIO(res.text))
         
-        # ヘッダーとデータを分離
+        # ヘッダーを読み込む
         header = next(csv_reader)
+        
+        # 2行目から6行目を無視する（5行スキップ）
+        for _ in range(5):
+            next(csv_reader, None)
+        
         data = list(csv_reader)
         
         return header, data
@@ -57,7 +63,7 @@ def main():
             val_2023 = float(row[y2023_index])
             
             if val_2022 != 0:
-                growth_rate = (val_2023 / val_2022 - 1) * 100
+                growth_rate = (val_23 / val_22 - 1) * 100
                 calculated_data.append({'品目': item, '前年比': f'{growth_rate:.2f}%'})
         except (ValueError, IndexError):
             continue
@@ -95,3 +101,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    
