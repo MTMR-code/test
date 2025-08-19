@@ -4,11 +4,6 @@ import csv
 from io import StringIO
 from datetime import datetime
 
-# 全角数字を半角数字に変換するヘルパー関数
-def zenkaku_to_hankaku_digits(s):
-    """全角数字を半角数字に変換します。"""
-    return s.translate(str.maketrans('０１２３４５６７８９', '0123456789'))
-
 @st.cache_data
 def load_data(url):
     """
@@ -43,7 +38,6 @@ def main():
     if not data:
         st.stop()
     
-    # 7行目の年月データを取得し、最も新しいデータを見つける
     if not data or not data[-1]:
         st.error("データ行が見つかりません。")
         st.stop()
@@ -51,21 +45,20 @@ def main():
     latest_row = data[-1]
     latest_date_str = latest_row[0]
 
-    # 全角数字を半角に変換してからパースを試みる
+    # 年月データをYYYYMM形式でパース
     try:
-        half_width_date_str = zenkaku_to_hankaku_digits(latest_date_str)
-        latest_date = datetime.strptime(half_width_date_str, '%Y年%m月')
+        latest_date = datetime.strptime(latest_date_str, '%Y%m')
     except (ValueError, IndexError):
-        st.error(f"CSVファイルの1列目の年月データ形式が予期せぬ形式です。例: 2023年01月, 2023年1月")
+        st.error(f"CSVファイルの1列目の年月データ形式が予期せぬ形式です。例: 202301")
         st.stop()
 
     # 1年前のデータ行を検索
     prev_year_date = latest_date.replace(year=latest_date.year - 1)
-    prev_year_date_str = prev_year_date.strftime('%Y年%m月')
+    prev_year_date_str = prev_year_date.strftime('%Y%m')
     
     prev_year_row = None
     for row in data:
-        if zenkaku_to_hankaku_digits(row[0]) == prev_year_date_str:
+        if row[0] == prev_year_date_str:
             prev_year_row = row
             break
             
