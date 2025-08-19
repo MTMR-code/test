@@ -7,19 +7,17 @@ from io import StringIO
 def load_data(url):
     """
     指定されたURLからCSVデータをダウンロードし、ヘッダーとデータを取得する関数。
-    2行目から6行目を無視してデータをパースします。
     """
     try:
         res = requests.get(url, timeout=10)
         res.encoding = 'shift_jis'
         
-        # StringIOを使ってテキストデータをファイルのように読み込む
         csv_reader = csv.reader(StringIO(res.text))
         
-        # ヘッダーを読み込む
+        # 1行目（ヘッダー）を読み込む
         header = next(csv_reader)
         
-        # 2行目から6行目を無視する（5行スキップ）
+        # 2行目から6行目を無視
         for _ in range(5):
             next(csv_reader, None)
         
@@ -31,8 +29,8 @@ def load_data(url):
         return None, None
 
 def main():
-    st.title('物価が安定した食材レシピ提案アプリ 🍳')
-    st.write("消費者物価指数（CPI）の前年比が小さい、価格の変動が安定している食材を基にレシピを提案します。")
+    st.title('物価が下落している食材レシピ提案アプリ 🍳')
+    st.write("消費者物価指数（CPI）の前年比が下落（マイナス）している食材を基に、お得なレシピを提案します。")
 
     url = "https://www.e-stat.go.jp/stat-search/file-download?statInfId=000032103842&fileKind=1"
     
@@ -41,7 +39,11 @@ def main():
     if not data:
         st.stop()
     
-    # CSVファイルのヘッダー名に合わせてインデックスを特定
+    # 修正部分: 念のため、ヘッダーを出力して確認
+    st.write("ダウンロードしたCSVファイルのヘッダー:")
+    st.write(header)
+    
+    # 列名が変更されている可能性を考慮し、動的にインデックスを特定
     try:
         item_index = header.index('類・品目')
         y2022_index = header.index('令和4年')
@@ -55,7 +57,6 @@ def main():
     for row in data:
         try:
             item = row[item_index]
-            # 「類」のデータを除外
             if '類' in item and len(item) < 4:
                 continue
             
@@ -63,21 +64,22 @@ def main():
             val_2023 = float(row[y2023_index])
             
             if val_2022 != 0:
-                growth_rate = (val_23 / val_22 - 1) * 100
-                calculated_data.append({'品目': item, '前年比': f'{growth_rate:.2f}%'})
+                growth_rate = (val_2023 / val_2022 - 1) * 100
+                # 修正部分: 物価が下落している（前年比がマイナス）ものだけをリストに追加
+                if growth_rate < 0:
+                    calculated_data.append({'品目': item, '前年比': f'{growth_rate:.2f}%'})
         except (ValueError, IndexError):
             continue
 
-    # 前年比の小さい順にソートして上位10件を取得
-    stable_foods = sorted(calculated_data, key=lambda x: float(x['前年比'].strip('%')))[:10]
+    # 修正部分: 下落率の大きい（値が小さい）順にソートしてトップ10を取得
+    falling_foods = sorted(calculated_data, key=lambda x: float(x['前年比'].strip('%')))[:10]
 
-    st.subheader('価格が安定している食材リスト')
-    st.table(stable_foods)
+    st.subheader('物価が下落している食材リスト')
+    st.table(falling_foods)
 
-    # ユーザーが食材を選択
     selected_food = st.selectbox(
         'レシピを知りたい食材を選択してください：',
-        [food['品目'] for food in stable_foods]
+        [food['品目'] for food in falling_foods]
     )
 
     # ダミーのレシピデータ
@@ -101,4 +103,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    
