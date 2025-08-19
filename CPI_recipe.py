@@ -62,20 +62,30 @@ def main():
         st.error(f"1年前のデータ（{prev_year_date_str}）が見つかりませんでした。")
         st.stop()
 
-    # 「食料」に限定するための処理
+    # 「食料」の開始と「住居」の開始インデックスを特定
     food_start_index = -1
+    housing_start_index = -1
     for i, col in enumerate(header):
         if col == '食料':
             food_start_index = i
+        if col == '住居':
+            housing_start_index = i
+        if food_start_index != -1 and housing_start_index != -1:
             break
             
     if food_start_index == -1:
         st.error("CSVファイルのヘッダーに「食料」が見つかりませんでした。")
         st.stop()
+    
+    # 処理範囲を「食料」から「住居」の手前までに限定
+    if housing_start_index == -1:
+        processing_range = range(food_start_index, len(header))
+    else:
+        processing_range = range(food_start_index, housing_start_index)
 
+    # 物価下落率を計算
     calculated_data = []
-    # 「食料」のインデックスから最後の列までを処理
-    for i in range(food_start_index, len(header)):
+    for i in processing_range:
         try:
             item = header[i]
             # 「食料」自体のデータは除外
