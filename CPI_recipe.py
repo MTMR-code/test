@@ -14,10 +14,8 @@ def load_data(url):
         res.encoding = 'shift_jis'
         csv_reader = csv.reader(StringIO(res.text))
         
-        # 1行目をヘッダーとして読み込む
         header = next(csv_reader)
         
-        # 2行目から6行目を無視
         for _ in range(5):
             next(csv_reader, None)
         
@@ -45,14 +43,12 @@ def main():
     latest_row = data[-1]
     latest_date_str = latest_row[0]
 
-    # 年月データをYYYYMM形式でパース
     try:
         latest_date = datetime.strptime(latest_date_str, '%Y%m')
     except (ValueError, IndexError):
         st.error(f"CSVファイルの1列目の年月データ形式が予期せぬ形式です。例: 202301")
         st.stop()
 
-    # 1年前のデータ行を検索
     prev_year_date = latest_date.replace(year=latest_date.year - 1)
     prev_year_date_str = prev_year_date.strftime('%Y%m')
     
@@ -66,12 +62,26 @@ def main():
         st.error(f"1年前のデータ（{prev_year_date_str}）が見つかりませんでした。")
         st.stop()
 
-    # 物価下落率を計算
+    # 「食料」に限定するための処理
+    food_start_index = -1
+    for i, col in enumerate(header):
+        if col == '食料':
+            food_start_index = i
+            break
+            
+    if food_start_index == -1:
+        st.error("CSVファイルのヘッダーに「食料」が見つかりませんでした。")
+        st.stop()
+
     calculated_data = []
-    # 総合指数（通常2列目）を除外し、品目ごとのデータを処理
-    for i in range(2, len(header)):
+    # 「食料」のインデックスから最後の列までを処理
+    for i in range(food_start_index, len(header)):
         try:
             item = header[i]
+            # 「食料」自体のデータは除外
+            if item == '食料':
+                continue
+                
             val_latest = float(latest_row[i])
             val_prev_year = float(prev_year_row[i])
             
@@ -82,15 +92,13 @@ def main():
         except (ValueError, IndexError):
             continue
 
-    # 物価が下落している品目がない場合
     if not calculated_data:
-        st.info("現在、物価が下落している食材は見つかりませんでした。")
+        st.info("現在、物価が下落している食料品は見つかりませんでした。")
         st.stop()
 
-    # 下落率の大きい（値が小さい）順にソートしてトップ10を取得
     falling_foods = sorted(calculated_data, key=lambda x: float(x['前年比'].strip('%')))[:10]
 
-    st.subheader('物価が下落している食材リスト')
+    st.subheader('物価が下落している食料品リスト')
     st.table(falling_foods)
 
     selected_food = st.selectbox(
@@ -98,7 +106,6 @@ def main():
         [food['品目'] for food in falling_foods]
     )
 
-    # ダミーのレシピデータ
     recipes = {
         '豆腐': {'ジャンル': '和食', 'レシピ名': '簡単麻婆豆腐', '材料': '豆腐、ひき肉、長ねぎ、にんにく、しょうが、豆板醤', '作り方': 'ひき肉と香味野菜を炒め、調味料と水を加えて煮立てる。豆腐を加えて温める。'},
         '食パン': {'ジャンル': '洋食', 'レシピ名': 'カリカリチーズトースト', '材料': '食パン、とろけるチーズ', '作り方': '食パンにチーズを乗せ、オーブントースターで焼き色がつくまで焼く。'},
