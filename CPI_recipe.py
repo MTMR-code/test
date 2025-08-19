@@ -15,7 +15,6 @@ def load_data(url):
         res.encoding = 'shift_jis'
         csv_reader = csv.reader(StringIO(res.text))
         
-        # 1行目をヘッダーとして読み込む
         header = next(csv_reader)
         
         # 2行目から6行目を無視
@@ -76,34 +75,4 @@ def main():
         try:
             item = header[i]
             val_latest = float(latest_row[i])
-            val_prev_year = float(prev_year_row[i])
-            
-            if val_prev_year != 0:
-                growth_rate = (val_latest / val_prev_year - 1) * 100
-                if growth_rate < 0:
-                    calculated_data.append({'品目': item, '前年比': f'{growth_rate:.2f}%'})
-        except (ValueError, IndexError):
-            continue
-
-    # 物価が下落している品目がない場合
-    if not calculated_data:
-        st.info("現在、物価が下落している食材は見つかりませんでした。")
-        st.stop()
-
-    # 下落率の大きい（値が小さい）順にソートしてトップ10を取得
-    falling_foods = sorted(calculated_data, key=lambda x: float(x['前年比'].strip('%')))[:10]
-
-    st.subheader('物価が下落している食材リスト')
-    st.table(falling_foods)
-
-    selected_food = st.selectbox(
-        'レシピを知りたい食材を選択してください：',
-        [food['品目'] for food in falling_foods]
-    )
-
-    # ダミーのレシピデータ
-    recipes = {
-        '豆腐': {'ジャンル': '和食', 'レシピ名': '簡単麻婆豆腐', '材料': '豆腐、ひき肉、長ねぎ、にんにく、しょうが、豆板醤', '作り方': 'ひき肉と香味野菜を炒め、調味料と水を加えて煮立てる。豆腐を加えて温める。'},
-        '食パン': {'ジャンル': '洋食', 'レシピ名': 'カリカリチーズトースト', '材料': '食パン、とろけるチーズ', '作り方': '食パンにチーズを乗せ、オーブントースターで焼き色がつくまで焼く。'},
-        '鶏卵': {'
-    
+            val_
